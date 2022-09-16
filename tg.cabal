@@ -26,4 +26,4 @@ executable tg
   default-language:    Haskell2010
   ghc-options:
     -fprof-auto
-    "-with-rtsopts=-pp"
+    "-with-rtsopts=-p"
