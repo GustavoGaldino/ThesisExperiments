@@ -1,21 +1,21 @@
 import System.Environment
+import Control.DeepSeq
 
 import qualified Data.Edison.Seq.SimpleQueue as S
 
+data DataStructure = Seq deriving Show
+data Experiment = Add deriving Show
 
-data EdisonDataStructure = EdisonSeq deriving Show
-data EdisonExperiment = Add deriving Show
+dataStructureAndExperimentToExperimentFunction :: DataStructure -> Experiment -> IO ()
+dataStructureAndExperimentToExperimentFunction Seq Add = seqAddExperiment
 
-dataStructureAndExperimentToExperimentFunction :: EdisonDataStructure -> EdisonExperiment -> IO ()
-dataStructureAndExperimentToExperimentFunction EdisonSeq Add = seqAddExperiment
+rawStringToDataStructure :: String -> DataStructure
+rawStringToDataStructure "Seq" = Seq
+rawStringToDataStructure _ = error "Could not match any data structure"
 
-rawStringToEdisonDataStructure :: String -> EdisonDataStructure
-rawStringToEdisonDataStructure "EdisonSeq" = EdisonSeq
-rawStringToEdisonDataStructure _ = error "Could not match any edison data structure"
-
-rawStringToEdisonExperiment :: String -> EdisonExperiment
-rawStringToEdisonExperiment "Add" = Add
-rawStringToEdisonExperiment _ = error "Could not match any edison experiment"
+rawStringToExperiment :: String -> Experiment
+rawStringToExperiment "Add" = Add
+rawStringToExperiment _ = error "Could not match any experiment"
 
 baseNElems :: Int
 baseNElems = 100000
@@ -26,22 +26,22 @@ addFromNElems = 100000
 addEnvSetup :: S.Seq Int
 addEnvSetup = defaultEnv
 
+instance (NFData a) => NFData (S.Seq a) where
+    rnf s = S.strictWith rnf s `seq` ()
+
 main :: IO ()
 main = do
     args <- getArgs
-    let ds = rawStringToEdisonDataStructure $ head args
-    let experiment = rawStringToEdisonExperiment $ args !! 1
-    seq (dataStructureAndExperimentToExperimentFunction ds experiment) (return ())
-    --return (S.lhead $ temp upper) >>= putStrLn . show
+    let ds = rawStringToDataStructure $ head args
+    let experiment = rawStringToExperiment $ args !! 1
+    experimentResult <- dataStructureAndExperimentToExperimentFunction ds experiment
+    experimentResult  `deepseq` return ()
 
 seqAddExperiment :: IO ()
-seqAddExperiment = benchmark `seq` return ()
+seqAddExperiment = benchmark `deepseq` return ()
     where
         ds = addEnvSetup
         benchmark = addNDistinctFrom ds addFromNElems 0
-
-temp :: Int -> S.Seq Int
-temp v = foldl (\set val -> S.lcons val set) S.empty [1..v]
 
 addNDistinctFrom :: S.Seq Int -> Int -> Int -> S.Seq Int
 addNDistinctFrom seq 0 _ = seq
