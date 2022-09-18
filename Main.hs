@@ -4,7 +4,7 @@ import Control.DeepSeq
 import qualified Data.Edison.Seq.SimpleQueue as S
 
 data DataStructure = Seq deriving Show
-data Experiment = Add | AddAll | Clear | Contains deriving Show
+data Experiment = Add | AddAll | Clear | Contains | ContainsAll deriving Show
 
 rawStringToDataStructure :: String -> DataStructure
 rawStringToDataStructure "Seq" = Seq
@@ -15,6 +15,7 @@ rawStringToExperiment "Add" = Add
 rawStringToExperiment "AddAll" = AddAll
 rawStringToExperiment "Clear" = Clear
 rawStringToExperiment "Contains" = Contains
+rawStringToExperiment "ContainsAll" = ContainsAll
 rawStringToExperiment _ = error "Could not match any experiment"
 
 dataStructureAndExperimentToExperimentFunction :: DataStructure -> Experiment -> IO ()
@@ -22,6 +23,7 @@ dataStructureAndExperimentToExperimentFunction Seq Add = seqAddExperiment
 dataStructureAndExperimentToExperimentFunction Seq AddAll = seqAddAllExperiment
 dataStructureAndExperimentToExperimentFunction Seq Clear = seqClearExperiment
 dataStructureAndExperimentToExperimentFunction Seq Contains = seqContainsExperiment
+dataStructureAndExperimentToExperimentFunction Seq ContainsAll = seqContainsAllExperiment
 
 baseNElems :: Int
 baseNElems = 100000
@@ -43,6 +45,15 @@ containsNRepeats = 1000
 
 containsElement :: Int
 containsElement = 9999999
+
+containsAllNRepeats :: Int
+containsAllNRepeats = 5000
+
+containsAllSearchInNElems :: Int
+containsAllSearchInNElems = baseNElems
+
+containsAllSearchForNElems :: Int
+containsAllSearchForNElems = 1000
 
 instance (NFData a) => NFData (S.Seq a) where
     rnf s = S.strictWith rnf s `seq` ()
@@ -79,6 +90,12 @@ seqContainsExperiment = benchmark `deepseq` return ()
         ds = containsEnvSetup
         benchmark = containsNTimes ds containsElement containsNRepeats
 
+seqContainsAllExperiment :: IO ()
+seqContainsAllExperiment = benchmark `deepseq` return ()
+    where
+        (s, t) = containsAllEnvSetup
+        benchmark = containsAllNTimes s t containsAllNRepeats
+
 addNDistinctFrom :: S.Seq Int -> Int -> Int -> S.Seq Int
 addNDistinctFrom seq 0 _ = seq
 addNDistinctFrom seq n m =
@@ -109,6 +126,13 @@ containsNTimes :: S.Seq Int -> Int -> Int -> Bool
 containsNTimes _ _ 0 = False
 containsNTimes s e n = ( (||) ( containsNTimes s e ( n - 1 ) ) ) $!! ( contains s e )
 
+containsAll :: S.Seq Int -> S.Seq Int -> Bool
+containsAll s t = S.foldr (&&) True . S.map ( s `contains` ) $ t
+
+containsAllNTimes :: S.Seq Int -> S.Seq Int -> Int -> Bool
+containsAllNTimes _ _ 0 = False
+containsAllNTimes s t n = ( (||) ( containsAllNTimes s t ( n - 1 ) ) ) $!! ( s `containsAll` t )
+
 defaultEnv :: S.Seq Int
 defaultEnv = addNDistinctFrom S.empty baseNElems 0
 
@@ -123,3 +147,6 @@ clearEnvSetup = addNDistinctFrom S.empty clearNElems 0
 
 containsEnvSetup :: S.Seq Int
 containsEnvSetup = defaultEnv
+
+containsAllEnvSetup :: (S.Seq Int, S.Seq Int)
+containsAllEnvSetup = (addNDistinctFrom S.empty containsAllSearchInNElems 0, addNDistinctFrom S.empty containsAllSearchForNElems 0)
