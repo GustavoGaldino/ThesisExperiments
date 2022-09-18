@@ -4,7 +4,7 @@ import Control.DeepSeq
 import qualified Data.Edison.Seq.SimpleQueue as S
 
 data DataStructure = Seq deriving Show
-data Experiment = Add | AddAll | Clear | Contains | ContainsAll deriving Show
+data Experiment = Add | AddAll | Clear | Contains | ContainsAll | Iterator deriving Show
 
 rawStringToDataStructure :: String -> DataStructure
 rawStringToDataStructure "Seq" = Seq
@@ -16,6 +16,7 @@ rawStringToExperiment "AddAll" = AddAll
 rawStringToExperiment "Clear" = Clear
 rawStringToExperiment "Contains" = Contains
 rawStringToExperiment "ContainsAll" = ContainsAll
+rawStringToExperiment "Iterator" = Iterator
 rawStringToExperiment _ = error "Could not match any experiment"
 
 dataStructureAndExperimentToExperimentFunction :: DataStructure -> Experiment -> IO ()
@@ -24,6 +25,7 @@ dataStructureAndExperimentToExperimentFunction Seq AddAll = seqAddAllExperiment
 dataStructureAndExperimentToExperimentFunction Seq Clear = seqClearExperiment
 dataStructureAndExperimentToExperimentFunction Seq Contains = seqContainsExperiment
 dataStructureAndExperimentToExperimentFunction Seq ContainsAll = seqContainsAllExperiment
+dataStructureAndExperimentToExperimentFunction Seq Iterator = seqIteratorExperiment
 
 baseNElems :: Int
 baseNElems = 100000
@@ -96,6 +98,12 @@ seqContainsAllExperiment = benchmark `deepseq` return ()
         (s, t) = containsAllEnvSetup
         benchmark = containsAllNTimes s t containsAllNRepeats
 
+seqIteratorExperiment :: IO ()
+seqIteratorExperiment = benchmark `deepseq` return ()
+    where
+        ds = iteratorEnvSetup
+        benchmark = iterator ds
+
 addNDistinctFrom :: S.Seq Int -> Int -> Int -> S.Seq Int
 addNDistinctFrom seq 0 _ = seq
 addNDistinctFrom seq n m =
@@ -133,6 +141,9 @@ containsAllNTimes :: S.Seq Int -> S.Seq Int -> Int -> Bool
 containsAllNTimes _ _ 0 = False
 containsAllNTimes s t n = ( (||) ( containsAllNTimes s t ( n - 1 ) ) ) $!! ( s `containsAll` t )
 
+iterator :: S.Seq Int -> S.Seq Int
+iterator = S.map ( id )
+
 defaultEnv :: S.Seq Int
 defaultEnv = addNDistinctFrom S.empty baseNElems 0
 
@@ -150,3 +161,6 @@ containsEnvSetup = defaultEnv
 
 containsAllEnvSetup :: (S.Seq Int, S.Seq Int)
 containsAllEnvSetup = (addNDistinctFrom S.empty containsAllSearchInNElems 0, addNDistinctFrom S.empty containsAllSearchForNElems 0)
+
+iteratorEnvSetup :: S.Seq Int
+iteratorEnvSetup = defaultEnv
