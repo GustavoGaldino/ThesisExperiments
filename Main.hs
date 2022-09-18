@@ -4,7 +4,7 @@ import Control.DeepSeq
 import qualified Data.Edison.Seq.SimpleQueue as S
 
 data DataStructure = Seq deriving Show
-data Experiment = Add | AddAll | Clear | Contains | ContainsAll | Iterator | Remove deriving Show
+data Experiment = Add | AddAll | Clear | Contains | ContainsAll | Iterator | Remove | RemoveAll deriving Show
 
 rawStringToDataStructure :: String -> DataStructure
 rawStringToDataStructure "Seq" = Seq
@@ -18,6 +18,7 @@ rawStringToExperiment "Contains" = Contains
 rawStringToExperiment "ContainsAll" = ContainsAll
 rawStringToExperiment "Iterator" = Iterator
 rawStringToExperiment "Remove" = Remove
+rawStringToExperiment "RemoveAll" = RemoveAll
 rawStringToExperiment _ = error "Could not match any experiment"
 
 dataStructureAndExperimentToExperimentFunction :: DataStructure -> Experiment -> IO ()
@@ -28,6 +29,7 @@ dataStructureAndExperimentToExperimentFunction Seq Contains = seqContainsExperim
 dataStructureAndExperimentToExperimentFunction Seq ContainsAll = seqContainsAllExperiment
 dataStructureAndExperimentToExperimentFunction Seq Iterator = seqIteratorExperiment
 dataStructureAndExperimentToExperimentFunction Seq Remove = seqRemoveExperiment
+dataStructureAndExperimentToExperimentFunction Seq RemoveAll = seqRemoveAllExperiment
 
 baseNElems :: Int
 baseNElems = 100000
@@ -64,6 +66,15 @@ removeFromNElems = baseNElems
 
 removeNRepeats :: Int
 removeNRepeats = 10000
+
+removeAllFromNElems :: Int
+removeAllFromNElems = baseNElems
+
+removeAllNElems :: Int
+removeAllNElems  = 1000
+
+removeAllNRepeats :: Int
+removeAllNRepeats = 10
 
 instance (NFData a) => NFData (S.Seq a) where
     rnf s = S.strictWith rnf s `seq` ()
@@ -118,6 +129,12 @@ seqRemoveExperiment = benchmark `deepseq` return ()
         ds = removeEnvSetup
         benchmark = removeNTimes ds removeNRepeats
 
+seqRemoveAllExperiment :: IO ()
+seqRemoveAllExperiment = benchmark `deepseq` return ()
+    where
+        (s, t) = removeAllEnvSetup
+        benchmark = removeAllNTimes s t removeAllNRepeats
+
 addNDistinctFrom :: S.Seq Int -> Int -> Int -> S.Seq Int
 addNDistinctFrom seq 0 _ = seq
 addNDistinctFrom seq n m =
@@ -162,6 +179,13 @@ removeNTimes :: S.Seq Int -> Int -> S.Seq Int
 removeNTimes s 0 = s
 removeNTimes s n = deepseq ( remove s ) ( removeNTimes s ( n - 1 ) )
 
+removeAll :: S.Seq Int -> S.Seq Int -> S.Seq Int
+removeAll s t = S.filter ( not . ( t `contains` ) ) s
+
+removeAllNTimes :: S.Seq Int -> S.Seq Int -> Int -> S.Seq Int
+removeAllNTimes s _ 0 = s
+removeAllNTimes s t n =  deepseq ( removeAll s t ) ( removeAllNTimes s t ( n - 1 ) )
+
 defaultEnv :: S.Seq Int
 defaultEnv = addNDistinctFrom S.empty baseNElems 0
 
@@ -185,3 +209,6 @@ iteratorEnvSetup = defaultEnv
 
 removeEnvSetup :: S.Seq Int
 removeEnvSetup = addNDistinctFrom S.empty removeFromNElems 0
+
+removeAllEnvSetup :: (S.Seq Int , S.Seq Int)
+removeAllEnvSetup = (addNDistinctFrom S.empty removeAllFromNElems 0, addNDistinctFrom S.empty removeAllNElems 0)
