@@ -23,165 +23,69 @@ rawStringToExperiment "RetainAll" = RetainAll
 rawStringToExperiment "ToList" = ToList
 rawStringToExperiment _ = error "Could not match any experiment"
 
-dataStructureAndExperimentToExperimentFunction :: DataStructure -> Experiment -> IO ()
-dataStructureAndExperimentToExperimentFunction Seq Add = seqAddExperiment
-dataStructureAndExperimentToExperimentFunction Seq AddAll = seqAddAllExperiment
-dataStructureAndExperimentToExperimentFunction Seq Clear = seqClearExperiment
-dataStructureAndExperimentToExperimentFunction Seq Contains = seqContainsExperiment
-dataStructureAndExperimentToExperimentFunction Seq ContainsAll = seqContainsAllExperiment
-dataStructureAndExperimentToExperimentFunction Seq Iterator = seqIteratorExperiment
-dataStructureAndExperimentToExperimentFunction Seq Remove = seqRemoveExperiment
-dataStructureAndExperimentToExperimentFunction Seq RemoveAll = seqRemoveAllExperiment
-dataStructureAndExperimentToExperimentFunction Seq RetainAll = seqRetainAllExperiment
-dataStructureAndExperimentToExperimentFunction Seq ToList = seqToListExperiment
+experimentToExperimentFunction :: Experiment -> ExperimentFunction
+experimentToExperimentFunction Add = addExperiment
+experimentToExperimentFunction AddAll = addAllExperiment
+experimentToExperimentFunction Clear = clearExperiment
+experimentToExperimentFunction Contains = containsExperiment
+experimentToExperimentFunction ContainsAll = containsAllExperiment
+experimentToExperimentFunction Iterator = iteratorExperiment
+experimentToExperimentFunction Remove = removeExperiment
+experimentToExperimentFunction RemoveAll = removeAllExperiment
+experimentToExperimentFunction RetainAll = retainAllExperiment
+experimentToExperimentFunction ToList = toListExperiment
 
-baseNElems :: Int
-baseNElems = 100000
+simpleSeqEnvSetup :: Int -> Maybe Int -> Experimenter
+simpleSeqEnvSetup baseElems Nothing = SimpleSeq (addNDistinctFrom S.empty baseElems 0) undefined
+simpleSeqEnvSetup baseElems (Just opElems) = SimpleSeq (addNDistinctFrom S.empty baseElems 0) (addNDistinctFrom S.empty opElems 0)
 
-addFromNElems :: Int
-addFromNElems = 100000
-
-addAllFromNElems :: Int
-addAllFromNElems  = 1000
-
-addAllNRepeats :: Int
-addAllNRepeats = 1000
-
-clearNElems :: Int
-clearNElems = 100000
-
-containsNRepeats  :: Int
-containsNRepeats = 1000
-
-containsElement :: Int
-containsElement = 9999999
-
-containsAllNRepeats :: Int
-containsAllNRepeats = 5000
-
-containsAllSearchInNElems :: Int
-containsAllSearchInNElems = baseNElems
-
-containsAllSearchForNElems :: Int
-containsAllSearchForNElems = 1000
-
-removeFromNElems :: Int
-removeFromNElems = baseNElems
-
-removeNRepeats :: Int
-removeNRepeats = 10000
-
-removeAllFromNElems :: Int
-removeAllFromNElems = baseNElems
-
-removeAllNElems :: Int
-removeAllNElems  = 1000
-
-removeAllNRepeats :: Int
-removeAllNRepeats = 10
-
-retainAllFromNElems :: Int
-retainAllFromNElems = baseNElems
-
-retainAllToNElems :: Int
-retainAllToNElems = 1000
-
-retainAllNRepeats :: Int
-retainAllNRepeats = 10
-
-toListFromNElems :: Int
-toListFromNElems = baseNElems
-
-toListNRepeats :: Int
-toListNRepeats = 5000
+dataStructureToExperimenterSetup :: DataStructure -> Int -> Maybe Int -> Experimenter
+dataStructureToExperimenterSetup Seq = simpleSeqEnvSetup
 
 instance (NFData a) => NFData (S.Seq a) where
     rnf s = S.strictWith rnf s `seq` ()
+
+data Experimenter = SimpleSeq (S.Seq Int) (S.Seq Int)
+instance NFData Experimenter where
+    rnf (SimpleSeq ds _) = rnf ds
+
+type ExperimentFunction = Experimenter -> Maybe Int -> Experimenter
+
+addNDistinctFrom :: S.Seq Int -> Int -> Int -> S.Seq Int
+addNDistinctFrom s 0 _ = s
+addNDistinctFrom s n m =
+    let
+        elemToAdd =  m + n - 1
+        nextNumber = n - 1
+        cons = if even n then S.rcons else S.lcons
+    in
+        addNDistinctFrom (elemToAdd `cons` s) nextNumber m
 
 main :: IO ()
 main = do
     args <- getArgs
     let ds = rawStringToDataStructure $ head args
     let experiment = rawStringToExperiment $ args !! 1
-    experimentResult <- dataStructureAndExperimentToExperimentFunction ds experiment
-    experimentResult  `deepseq` return ()
+    let iters = read (args !! 2) :: Int
+    let baseElems = read (args !! 3) :: Int
+    let opElems = if (length args) > 4 then Just (read (args !! 4) :: Int) else Nothing
+    let experimentF = experimentToExperimentFunction experiment
+    let experimenter = dataStructureToExperimenterSetup ds baseElems opElems
+    runNExperimentFunction iters opElems experimenter experimentF
 
-seqAddExperiment :: IO ()
-seqAddExperiment = benchmark `deepseq` return ()
-    where
-        ds = addEnvSetup
-        benchmark = addNDistinctFrom ds addFromNElems 0
+runNExperimentFunction :: Int -> Maybe Int -> Experimenter -> ExperimentFunction -> IO ()
+runNExperimentFunction 0 _ _ _ = return ()
+runNExperimentFunction iters opElems experimenter expF = expF experimenter opElems `deepseq` runNExperimentFunction (iters-1) opElems experimenter expF
 
-seqAddAllExperiment :: IO ()
-seqAddAllExperiment = benchmark `deepseq` return ()
-    where
-        (s, t) = addAllEnvSetup
-        benchmark = addAllNTimes s t addAllNRepeats
-
-seqClearExperiment :: IO ()
-seqClearExperiment = benchmark `deepseq` return ()
-    where
-        ds = clearEnvSetup
-        benchmark = clear ds
-
-seqContainsExperiment :: IO ()
-seqContainsExperiment = benchmark `deepseq` return ()
-    where
-        ds = containsEnvSetup
-        benchmark = containsNTimes ds containsElement containsNRepeats
-
-seqContainsAllExperiment :: IO ()
-seqContainsAllExperiment = benchmark `deepseq` return ()
-    where
-        (s, t) = containsAllEnvSetup
-        benchmark = containsAllNTimes s t containsAllNRepeats
-
-seqIteratorExperiment :: IO ()
-seqIteratorExperiment = benchmark `deepseq` return ()
-    where
-        ds = iteratorEnvSetup
-        benchmark = iterator ds
-
-seqRemoveExperiment :: IO ()
-seqRemoveExperiment = benchmark `deepseq` return ()
-    where
-        ds = removeEnvSetup
-        benchmark = removeNTimes ds removeNRepeats
-
-seqRemoveAllExperiment :: IO ()
-seqRemoveAllExperiment = benchmark `deepseq` return ()
-    where
-        (s, t) = removeAllEnvSetup
-        benchmark = removeAllNTimes s t removeAllNRepeats
-
-seqRetainAllExperiment :: IO ()
-seqRetainAllExperiment = benchmark `deepseq` return ()
-    where
-        (s, t) = retainAllEnvSetup
-        benchmark = retainAllNTimes s t retainAllNRepeats
-
-seqToListExperiment :: IO ()
-seqToListExperiment = benchmark `deepseq` return ()
-    where
-        ds = toListEnvSetup
-        benchmark = toListNTimes ds toListNRepeats
-
-addNDistinctFrom :: S.Seq Int -> Int -> Int -> S.Seq Int
-addNDistinctFrom seq 0 _ = seq
-addNDistinctFrom seq n m =
-    let
-        elemToAdd =  m + n - 1
-        nextNumber = n - 1
-        cons = if even n then S.rcons else S.lcons
-    in
-        addNDistinctFrom ( elemToAdd `cons` seq ) nextNumber m
+addExperiment :: ExperimentFunction
+addExperiment _ Nothing = error "Add experiment needs operator elements"
+addExperiment (SimpleSeq ds t) (Just opElems) = SimpleSeq (addNDistinctFrom ds opElems 0) t
 
 addAll :: S.Seq Int -> S.Seq Int -> S.Seq Int
 addAll = S.append
 
-addAllNTimes :: S.Seq Int -> S.Seq Int -> Int -> S.Seq Int
-addAllNTimes s _ 0 = s
-addAllNTimes s t n = deepseq ( addAll s t ) ( addAllNTimes s t ( n - 1 ) )
+addAllExperiment :: ExperimentFunction
+addAllExperiment (SimpleSeq ds t) _ = SimpleSeq (addAll ds t) t
 
 remove :: S.Seq Int -> S.Seq Int
 remove s = if S.null s then s else S.ltail s
@@ -189,77 +93,46 @@ remove s = if S.null s then s else S.ltail s
 clear :: S.Seq Int -> S.Seq Int
 clear s = if S.null s then s else clear $ remove s
 
+clearExperiment :: ExperimentFunction
+clearExperiment (SimpleSeq ds t) _ = SimpleSeq (clear ds) t
+
 contains :: S.Seq Int -> Int -> Bool
 contains s e = not . S.null . S.filter ( (==) e ) $ s
 
-containsNTimes :: S.Seq Int -> Int -> Int -> Bool
-containsNTimes _ _ 0 = False
-containsNTimes s e n = ( (||) ( containsNTimes s e ( n - 1 ) ) ) $!! ( contains s e )
+containsExperiment :: ExperimentFunction
+containsExperiment experimenter@(SimpleSeq ds _) _ = contains ds elemToSearch `deepseq` experimenter
+    where
+        elemToSearch = 9999999
 
 containsAll :: S.Seq Int -> S.Seq Int -> Bool
 containsAll s t = S.foldr (&&) True . S.map ( s `contains` ) $ t
 
-containsAllNTimes :: S.Seq Int -> S.Seq Int -> Int -> Bool
-containsAllNTimes _ _ 0 = False
-containsAllNTimes s t n = ( (||) ( containsAllNTimes s t ( n - 1 ) ) ) $!! ( s `containsAll` t )
+containsAllExperiment :: ExperimentFunction
+containsAllExperiment experimenter@(SimpleSeq ds t) _ = containsAll ds t `deepseq` experimenter
 
 iterator :: S.Seq Int -> S.Seq Int
 iterator = S.map ( id )
 
-removeNTimes :: S.Seq Int -> Int -> S.Seq Int
-removeNTimes s 0 = s
-removeNTimes s n = deepseq ( remove s ) ( removeNTimes s ( n - 1 ) )
+iteratorExperiment :: ExperimentFunction
+iteratorExperiment (SimpleSeq ds t) _ = SimpleSeq (iterator ds) t
+
+removeExperiment :: ExperimentFunction
+removeExperiment (SimpleSeq ds t) _ = SimpleSeq (remove ds) t
 
 removeAll :: S.Seq Int -> S.Seq Int -> S.Seq Int
 removeAll s t = S.filter ( not . ( t `contains` ) ) s
 
-removeAllNTimes :: S.Seq Int -> S.Seq Int -> Int -> S.Seq Int
-removeAllNTimes s _ 0 = s
-removeAllNTimes s t n =  deepseq ( removeAll s t ) ( removeAllNTimes s t ( n - 1 ) )
+removeAllExperiment :: ExperimentFunction
+removeAllExperiment (SimpleSeq ds t) _ = SimpleSeq (removeAll ds t) t
 
 retainAll :: S.Seq Int -> S.Seq Int -> S.Seq Int
 retainAll s t = S.filter (t `contains`) s
 
-retainAllNTimes :: S.Seq Int -> S.Seq Int -> Int -> S.Seq Int
-retainAllNTimes s _ 0 = s
-retainAllNTimes s t n =  deepseq ( retainAll s t ) ( retainAllNTimes s t ( n - 1 ) )
+retainAllExperiment :: ExperimentFunction
+retainAllExperiment (SimpleSeq ds t) _ = SimpleSeq (retainAll ds t) t
 
 toList :: S.Seq Int -> [Int]
 toList = S.toList
 
-toListNTimes :: S.Seq Int -> Int -> [Int]
-toListNTimes _ 0 = []
-toListNTimes s n = deepseq (toList s) (toListNTimes s (n-1))
-
-defaultEnv :: S.Seq Int
-defaultEnv = addNDistinctFrom S.empty baseNElems 0
-
-addAllEnvSetup :: (S.Seq Int, S.Seq Int)
-addAllEnvSetup = (defaultEnv, addNDistinctFrom S.empty addAllFromNElems 0)
-
-addEnvSetup :: S.Seq Int
-addEnvSetup = defaultEnv
-
-clearEnvSetup :: S.Seq Int
-clearEnvSetup = addNDistinctFrom S.empty clearNElems 0
-
-containsEnvSetup :: S.Seq Int
-containsEnvSetup = defaultEnv
-
-containsAllEnvSetup :: (S.Seq Int, S.Seq Int)
-containsAllEnvSetup = (addNDistinctFrom S.empty containsAllSearchInNElems 0, addNDistinctFrom S.empty containsAllSearchForNElems 0)
-
-iteratorEnvSetup :: S.Seq Int
-iteratorEnvSetup = defaultEnv
-
-removeEnvSetup :: S.Seq Int
-removeEnvSetup = addNDistinctFrom S.empty removeFromNElems 0
-
-removeAllEnvSetup :: (S.Seq Int , S.Seq Int)
-removeAllEnvSetup = (addNDistinctFrom S.empty removeAllFromNElems 0, addNDistinctFrom S.empty removeAllNElems 0)
-
-retainAllEnvSetup :: (S.Seq Int, S.Seq Int)
-retainAllEnvSetup = (addNDistinctFrom S.empty retainAllFromNElems 0, addNDistinctFrom S.empty retainAllToNElems 0)
-
-toListEnvSetup :: S.Seq Int
-toListEnvSetup = addNDistinctFrom S.empty toListFromNElems 0
+toListExperiment :: ExperimentFunction
+toListExperiment experimenter@(SimpleSeq ds _) _ = toList ds `deepseq` experimenter
