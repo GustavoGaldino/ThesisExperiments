@@ -1,15 +1,24 @@
 import System.Environment
+
 import Control.DeepSeq
 
-import qualified Data.Edison.Seq.SimpleQueue as S
+import qualified Commons as C
+import qualified DataStructures.SimpleSeq as SS
 
+-- import qualified Data.Edison.Seq.SimpleQueue as S
+
+-- Supported data structures
 data DataStructure = Seq deriving Show
+
+-- Supported experiments (all of them)
 data Experiment = Add | AddAll | Clear | Contains | ContainsAll | Iterator | Remove | RemoveAll | RetainAll | ToList deriving Show
 
+-- Parse data structure input string
 rawStringToDataStructure :: String -> DataStructure
 rawStringToDataStructure "Seq" = Seq
 rawStringToDataStructure _ = error "Could not match any data structure"
 
+-- Parse experiment input string
 rawStringToExperiment :: String -> Experiment
 rawStringToExperiment "Add" = Add
 rawStringToExperiment "AddAll" = AddAll
@@ -23,7 +32,8 @@ rawStringToExperiment "RetainAll" = RetainAll
 rawStringToExperiment "ToList" = ToList
 rawStringToExperiment _ = error "Could not match any experiment"
 
-experimentToExperimentFunction :: Experiment -> ExperimentFunction
+-- Map parsed experiment input to experiment function
+experimentToExperimentFunction :: Experiment -> C.ExperimentFunction
 experimentToExperimentFunction Add = addExperiment
 experimentToExperimentFunction AddAll = addAllExperiment
 experimentToExperimentFunction Clear = clearExperiment
@@ -35,32 +45,48 @@ experimentToExperimentFunction RemoveAll = removeAllExperiment
 experimentToExperimentFunction RetainAll = retainAllExperiment
 experimentToExperimentFunction ToList = toListExperiment
 
-simpleSeqEnvSetup :: Int -> Maybe Int -> Experimenter
-simpleSeqEnvSetup baseElems Nothing = SimpleSeq (addNDistinctFrom S.empty baseElems 0) undefined
-simpleSeqEnvSetup baseElems (Just opElems) = SimpleSeq (addNDistinctFrom S.empty baseElems 0) (addNDistinctFrom S.empty opElems 0)
+-- Map parsed data structure input to data structure setup (base data structure to run experiments on)
+dataStructureToExperimenterSetup :: DataStructure -> Int -> Maybe Int -> C.Experimenter
+dataStructureToExperimenterSetup Seq = SS.envSetup
 
-dataStructureToExperimenterSetup :: DataStructure -> Int -> Maybe Int -> Experimenter
-dataStructureToExperimenterSetup Seq = simpleSeqEnvSetup
+-- Runs a given experiment function N times forcing evaluation through intermediate steps
+runNExperimentFunction :: Int -> Maybe Int -> C.Experimenter -> C.ExperimentFunction -> IO ()
+runNExperimentFunction 0 _ _ _ = return ()
+runNExperimentFunction iters opElems experimenter expF = expF experimenter opElems `deepseq` runNExperimentFunction (iters-1) opElems experimenter expF
 
-instance (NFData a) => NFData (S.Seq a) where
-    rnf s = S.strictWith rnf s `seq` ()
+-- Experiment functions (delegates to data structure module implementation)
+addExperiment :: C.ExperimentFunction
+addExperiment _ Nothing = error "Add experiment needs operator elements"
+addExperiment ds@(C.SimpleSeq _ _) opElems = SS.addExperiment ds opElems
 
-data Experimenter = SimpleSeq (S.Seq Int) (S.Seq Int)
-instance NFData Experimenter where
-    rnf (SimpleSeq ds _) = rnf ds
+addAllExperiment :: C.ExperimentFunction
+addAllExperiment ds@(C.SimpleSeq _ _) opElems = SS.addAllExperiment ds opElems
 
-type ExperimentFunction = Experimenter -> Maybe Int -> Experimenter
+clearExperiment :: C.ExperimentFunction
+clearExperiment ds@(C.SimpleSeq _ _) opElems = SS.clearExperiment ds opElems
 
-addNDistinctFrom :: S.Seq Int -> Int -> Int -> S.Seq Int
-addNDistinctFrom s 0 _ = s
-addNDistinctFrom s n m =
-    let
-        elemToAdd =  m + n - 1
-        nextNumber = n - 1
-        cons = if even n then S.rcons else S.lcons
-    in
-        addNDistinctFrom (elemToAdd `cons` s) nextNumber m
+containsExperiment :: C.ExperimentFunction
+containsExperiment ds@(C.SimpleSeq _ _) opElems = SS.containsExperiment ds opElems
 
+containsAllExperiment :: C.ExperimentFunction
+containsAllExperiment ds@(C.SimpleSeq _ _) opElems = SS.containsAllExperiment ds opElems
+
+iteratorExperiment :: C.ExperimentFunction
+iteratorExperiment ds@(C.SimpleSeq _ _) opElems = SS.iteratorExperiment ds opElems
+
+removeExperiment :: C.ExperimentFunction
+removeExperiment ds@(C.SimpleSeq _ _) opElems = SS.removeExperiment ds opElems
+
+removeAllExperiment :: C.ExperimentFunction
+removeAllExperiment ds@(C.SimpleSeq _ _) opElems = SS.removeAllExperiment ds opElems
+
+retainAllExperiment :: C.ExperimentFunction
+retainAllExperiment ds@(C.SimpleSeq _ _) opElems = SS.removeAllExperiment ds opElems
+
+toListExperiment :: C.ExperimentFunction
+toListExperiment ds@(C.SimpleSeq _ _) opElems = SS.toListExperiment ds opElems
+
+-- Read execution arguments, parse it and run experiment
 main :: IO ()
 main = do
     args <- getArgs
@@ -72,67 +98,3 @@ main = do
     let experimentF = experimentToExperimentFunction experiment
     let experimenter = dataStructureToExperimenterSetup ds baseElems opElems
     runNExperimentFunction iters opElems experimenter experimentF
-
-runNExperimentFunction :: Int -> Maybe Int -> Experimenter -> ExperimentFunction -> IO ()
-runNExperimentFunction 0 _ _ _ = return ()
-runNExperimentFunction iters opElems experimenter expF = expF experimenter opElems `deepseq` runNExperimentFunction (iters-1) opElems experimenter expF
-
-addExperiment :: ExperimentFunction
-addExperiment _ Nothing = error "Add experiment needs operator elements"
-addExperiment (SimpleSeq ds t) (Just opElems) = SimpleSeq (addNDistinctFrom ds opElems 0) t
-
-addAll :: S.Seq Int -> S.Seq Int -> S.Seq Int
-addAll = S.append
-
-addAllExperiment :: ExperimentFunction
-addAllExperiment (SimpleSeq ds t) _ = SimpleSeq (addAll ds t) t
-
-remove :: S.Seq Int -> S.Seq Int
-remove s = if S.null s then s else S.ltail s
-
-clear :: S.Seq Int -> S.Seq Int
-clear s = if S.null s then s else clear $ remove s
-
-clearExperiment :: ExperimentFunction
-clearExperiment (SimpleSeq ds t) _ = SimpleSeq (clear ds) t
-
-contains :: S.Seq Int -> Int -> Bool
-contains s e = not . S.null . S.filter ( (==) e ) $ s
-
-containsExperiment :: ExperimentFunction
-containsExperiment experimenter@(SimpleSeq ds _) _ = contains ds elemToSearch `deepseq` experimenter
-    where
-        elemToSearch = 9999999
-
-containsAll :: S.Seq Int -> S.Seq Int -> Bool
-containsAll s t = S.foldr (&&) True . S.map ( s `contains` ) $ t
-
-containsAllExperiment :: ExperimentFunction
-containsAllExperiment experimenter@(SimpleSeq ds t) _ = containsAll ds t `deepseq` experimenter
-
-iterator :: S.Seq Int -> S.Seq Int
-iterator = S.map ( id )
-
-iteratorExperiment :: ExperimentFunction
-iteratorExperiment (SimpleSeq ds t) _ = SimpleSeq (iterator ds) t
-
-removeExperiment :: ExperimentFunction
-removeExperiment (SimpleSeq ds t) _ = SimpleSeq (remove ds) t
-
-removeAll :: S.Seq Int -> S.Seq Int -> S.Seq Int
-removeAll s t = S.filter ( not . ( t `contains` ) ) s
-
-removeAllExperiment :: ExperimentFunction
-removeAllExperiment (SimpleSeq ds t) _ = SimpleSeq (removeAll ds t) t
-
-retainAll :: S.Seq Int -> S.Seq Int -> S.Seq Int
-retainAll s t = S.filter (t `contains`) s
-
-retainAllExperiment :: ExperimentFunction
-retainAllExperiment (SimpleSeq ds t) _ = SimpleSeq (retainAll ds t) t
-
-toList :: S.Seq Int -> [Int]
-toList = S.toList
-
-toListExperiment :: ExperimentFunction
-toListExperiment experimenter@(SimpleSeq ds _) _ = toList ds `deepseq` experimenter
