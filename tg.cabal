@@ -28,3 +28,4 @@ executable tg
   ghc-options:
     -fprof-auto
     "-with-rtsopts=-p"
+    -Wall
