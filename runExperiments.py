@@ -113,18 +113,28 @@ def run_experiments(data_structure: DataStructure, experiment: Experiment) -> li
 
     print('Gathering data varying number of iterations...')
     for cur_iters in iters:
+        if cur_iters == default_iters:
+            continue
         experiment_results = run_experiment(data_structure, experiment, cur_iters, default_base_elems, default_op_elems)
         csv_data.append(experiment_results)
 
     print('Gathering data varying number of base elements...')
     for cur_base_elems in base_elems:
+        if cur_base_elems == default_base_elems:
+            continue
         experiment_results = run_experiment(data_structure, experiment, default_iters, cur_base_elems, default_op_elems)
         csv_data.append(experiment_results)
 
     print('Gathering data varying number of operator elements...')
     for cur_op_elems in op_elems:
+        if cur_op_elems == default_op_elems:
+            continue
         experiment_results = run_experiment(data_structure, experiment, default_iters, default_base_elems, cur_op_elems)
         csv_data.append(experiment_results)
+
+    print('Gathering data on default parameters...')
+    experiment_results = run_experiment(data_structure, experiment, default_iters, default_base_elems, default_op_elems)
+    csv_data.append(experiment_results)
 
     return csv_data
 
