@@ -28,7 +28,7 @@ addNDistinctFrom s n m =
         addNDistinctFrom (elemToAdd `cons` s) nextNumber m
 
 envSetup :: Int -> Maybe Int -> C.Experimenter
-envSetup baseElems Nothing = C.SimpleQueue (addNDistinctFrom S.empty baseElems 0) undefined
+envSetup baseElems Nothing = C.SimpleQueue (addNDistinctFrom S.empty baseElems 0) (error "Can't use auxiliar DS without operator elements")
 envSetup baseElems (Just opElems) = C.SimpleQueue (addNDistinctFrom S.empty baseElems 0) (addNDistinctFrom S.empty opElems 0)
 
 addExperiment :: C.ExperimentFunction
