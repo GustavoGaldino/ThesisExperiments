@@ -20,6 +20,7 @@ class Experiment(Enum):
     ToList = 'ToList'
 supported_experiments = [e.value for e in Experiment]
 
+# Experiments default parameters (as defined by the research table)
 def get_parameters_default_for_experiment(experiment: Experiment) -> tuple[int, int, Optional[int]]:
     match experiment:
         case Experiment.Add:
@@ -92,6 +93,7 @@ def parse_args(args: list[str]) -> tuple[DataStructure, Experiment]:
 
     return DataStructure[args[1]], Experiment[args[2]]
 
+# Execute one experiment given a data structure, experiment type (operation) number of iterations, number of base elems, number of operator elems
 def run_experiment(data_structure: DataStructure, experiment: Experiment, iters: int, base_elems: int, op_elems: Optional[int]) -> tuple[float, int, float, float]:
     experiment_name = '{0}-{1}-{2}-{3}-{4}'.format(data_structure.value, experiment.value, iters, base_elems, op_elems)
     print('Running {0}'.format(experiment_name))
@@ -138,6 +140,7 @@ def run_experiments(data_structure: DataStructure, experiment: Experiment) -> li
 
     return csv_data
 
+# Create csv folder (if none exists) and dump the experiment results into it
 def write_csv_data(data_structure: DataStructure, experiment: Experiment, csv_data: list[tuple[float, int, float, float]]):
     makedirs('csv', exist_ok=True)
     with open('csv/{0}-{1}.csv'.format(data_structure.value, experiment.value), 'w') as file:
