@@ -61,7 +61,6 @@ def get_experiment_result_data() -> tuple[float, float, float, float]:
         experiment_lines = [line for line in lines if 'runNExperimentFunction' in line]
         # if the experiment function was a major cost centre, we need to access the second line because it will show up first in the major report
         experiment_line_index = 0 if len(experiment_lines) == 1 else 1
-        print(experiment_line_index)
         experiment_line = list(filter(lambda v: v, experiment_lines[experiment_line_index].split(' ')))
         # Percentages that the experiment took
         exp_time, exp_alloc, exp_energy_pkg, exp_energy_dram = float(experiment_line[8]), float(experiment_line[9]), float(experiment_line[10]), float(experiment_line[11][:-1])
