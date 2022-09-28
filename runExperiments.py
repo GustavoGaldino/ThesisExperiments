@@ -85,7 +85,7 @@ def run_experiments(data_structure: DataStructure, experiment: Experiment, exper
     (default_iters, default_base_elems, default_op_elems) = get_parameters_default_for_experiment(experiment)
     csv_data: list[tuple[float, float, float, float]] = []
 
-    print('Starting to vary {0} from {1} to {2} in steps'.format(experiment_parameter.value, initial_value, final_value, steps))
+    print('Starting to vary {0} from {1} to {2} in {3} steps'.format(experiment_parameter.value, initial_value, final_value, steps))
     current_value = initial_value
     step_size = (final_value - current_value)//(steps-1)
     while steps > 0:
