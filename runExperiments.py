@@ -70,14 +70,17 @@ def get_parameters_for_experiment(experiment: Experiment) -> tuple[list[int], li
             return ([5, 50, 500, 5000], [1, 10, 100, 1000, 10000, 100000], [None])
 
 # Reads tg.prof (profiler output) file and extract time, allocation, processor and dram energy data
-def get_experiment_result_data() -> tuple[float, int, float, float]:
+def get_experiment_result_data() -> tuple[float, float, float, float]:
     with open('tg.prof', 'r', encoding='ASCII') as prof_file:
         lines = prof_file.readlines()
-        time = float([line for line in lines if 'total time' in line][0].split('=')[1].split('secs')[0])
-        alloc = int([line for line in lines if 'total alloc' in line][0].split('=')[1].split('bytes')[0].replace(',', ''))
-        energy_pkg = float([line for line in lines if 'total energy pkg' in line][0].split('=')[1].split('joules')[0])
-        energy_dram = float([line for line in lines if 'total energy dram' in line][0].split('=')[1].split('joules')[0])
-        return (time, alloc, energy_pkg, energy_dram)
+        total_time = float([line for line in lines if 'total time' in line][0].split('=')[1].split('secs')[0])
+        total_alloc = int([line for line in lines if 'total alloc' in line][0].split('=')[1].split('bytes')[0].replace(',', ''))
+        total_energy_pkg = float([line for line in lines if 'total energy pkg' in line][0].split('=')[1].split('joules')[0])
+        total_energy_dram = float([line for line in lines if 'total energy dram' in line][0].split('=')[1].split('joules')[0])
+        experiment_line = list(filter(lambda v: v, [line for line in lines if 'runNExperimentFunction' in line][0].split(' ')))
+        # Percentages that the experiment took
+        exp_time, exp_alloc, exp_energy_pkg, exp_energy_dram = float(experiment_line[8]), float(experiment_line[9]), float(experiment_line[10]), float(experiment_line[11][:-1])
+        return (total_time*exp_time, total_alloc*exp_alloc/1024, total_energy_pkg*exp_energy_pkg, total_energy_dram*exp_energy_dram)
 
 # Returns validated data structure and experiment
 def parse_args(args: list[str]) -> tuple[DataStructure, Experiment]:
@@ -94,7 +97,7 @@ def parse_args(args: list[str]) -> tuple[DataStructure, Experiment]:
     return DataStructure[args[1]], Experiment[args[2]]
 
 # Execute one experiment given a data structure, experiment type (operation) number of iterations, number of base elems, number of operator elems
-def run_experiment(data_structure: DataStructure, experiment: Experiment, iters: int, base_elems: int, op_elems: Optional[int]) -> tuple[float, int, float, float]:
+def run_experiment(data_structure: DataStructure, experiment: Experiment, iters: int, base_elems: int, op_elems: Optional[int]) -> tuple[float, float, float, float]:
     experiment_name = '{0}-{1}-{2}-{3}-{4}'.format(data_structure.value, experiment.value, iters, base_elems, op_elems)
     print('Running {0}'.format(experiment_name))
     cmd = './dist-newstyle/build/x86_64-linux/ghc-7.11.20220915/tg-0.1.0.0/x/tg/build/tg/tg {0} {1} {2} {3} {4}'.format(data_structure.value, experiment.value, iters, base_elems, op_elems if op_elems is not None else '')
@@ -108,10 +111,10 @@ def run_experiment(data_structure: DataStructure, experiment: Experiment, iters:
     return get_experiment_result_data()
 
 # Run experiments with several argument valuations
-def run_experiments(data_structure: DataStructure, experiment: Experiment) -> list[tuple[float, int, float, float]]:
+def run_experiments(data_structure: DataStructure, experiment: Experiment) -> list[tuple[float, float, float, float]]:
     (default_iters, default_base_elems, default_op_elems) = get_parameters_default_for_experiment(experiment)
     iters, base_elems, op_elems = get_parameters_for_experiment(experiment)
-    csv_data: list[tuple[float, int, float, float]] = []
+    csv_data: list[tuple[float, float, float, float]] = []
 
     print('Gathering data varying number of iterations...')
     for cur_iters in iters:
@@ -141,7 +144,7 @@ def run_experiments(data_structure: DataStructure, experiment: Experiment) -> li
     return csv_data
 
 # Create csv folder (if none exists) and dump the experiment results into it
-def write_csv_data(data_structure: DataStructure, experiment: Experiment, csv_data: list[tuple[float, int, float, float]]):
+def write_csv_data(data_structure: DataStructure, experiment: Experiment, csv_data: list[tuple[float, float, float, float]]):
     makedirs('csv', exist_ok=True)
     with open('csv/{0}-{1}.csv'.format(data_structure.value, experiment.value), 'w') as file:
         file.write('time,alloc,energy_pkg,energy_dram\n')
