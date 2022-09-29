@@ -63,8 +63,8 @@ def get_experiment_result_data() -> tuple[float, float, float, float]:
         experiment_line_index = 0 if len(experiment_lines) == 1 else 1
         experiment_line = list(filter(lambda v: v, experiment_lines[experiment_line_index].split(' ')))
         # Percentages that the experiment took
-        exp_time, exp_alloc, exp_energy_pkg, exp_energy_dram = float(experiment_line[8]), float(experiment_line[9]), float(experiment_line[10]), float(experiment_line[11][:-1])
-        return (total_time*exp_time, total_alloc*exp_alloc/1024, total_energy_pkg*exp_energy_pkg, total_energy_dram*exp_energy_dram)
+        exp_time_perc, exp_alloc_perc, exp_energy_pkg_perc, exp_energy_dram_perc = float(experiment_line[8])/100, float(experiment_line[9])/100, float(experiment_line[10])/100, float(experiment_line[11][:-1])/100
+        return (total_time*exp_time_perc, total_alloc*exp_alloc_perc/(1024*1024), total_energy_pkg*exp_energy_pkg_perc, total_energy_dram*exp_energy_dram_perc)
 
 # Execute one experiment given a data structure, experiment type (operation) number of iterations, number of base elems, number of operator elems
 def run_experiment(data_structure: DataStructure, experiment: Experiment, iters: int, base_elems: int, op_elems: Optional[int]) -> tuple[float, float, float, float]:
