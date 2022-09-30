@@ -95,4 +95,7 @@ main = do
     let opElems = if (length args) > 4 then Just (read (args !! 4) :: Int) else Nothing
     let experimentF = experimentToExperimentFunction experiment
     let experimenter = dataStructureToExperimenterSetup ds baseElems opElems
+    -- Force evaluation of base and operation data structures before experiment starts
+    return $  deepseq experimenter ()
+    -- Run the experiment <iters> times
     runNExperimentFunction iters opElems experimenter experimentF
