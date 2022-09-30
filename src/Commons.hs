@@ -16,4 +16,4 @@ instance (NFData a) => NFData (SQ.Seq a) where
 
 -- Intermediate results are set in the base data structure in SimpleSeq, so need to force it
 instance NFData Experimenter where
-    rnf (SimpleQueue ds _) = rnf ds
+    rnf (SimpleQueue ds t) = rnf ds `seq` rnf t `seq` ()
