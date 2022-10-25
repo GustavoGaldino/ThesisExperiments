@@ -87,7 +87,7 @@ def run_experiments(data_structure: DataStructure, experiment: Experiment, exper
 
     print('Starting to vary {0} from {1} to {2} in {3} steps'.format(experiment_parameter.value, initial_value, final_value, steps))
     current_value = initial_value
-    step_size = (final_value - current_value)//(steps-1)
+    step_size = (final_value - current_value)//(steps-1) if steps > 1 else 0
     while steps > 0:
         match experiment_parameter:
             case ExperimentParameter.Iterations:
