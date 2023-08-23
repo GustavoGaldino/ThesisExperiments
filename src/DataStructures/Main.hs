@@ -42,8 +42,6 @@ containsExperiment experimenter@(C.SimpleQueue ds _) _ = let elemToSearch = 9999
 containsExperiment experimenter@(C.StandardSet ds _) _ = let elemToSearch = 9999999 in SS.containsSet ds elemToSearch `deepseq` experimenter
 containsExperiment experimenter@(C.AssocList ds _) _ = let elemToSearch = 9999999 in AL.contains elemToSearch ds `deepseq` experimenter
 containsExperiment experimenter@(C.MinHeap ds _) _ = let elemToSearch = 9999999 in MH.contains ds elemToSearch `deepseq` experimenter
-    where
-        elemToSearch = 9999999
 
 containsAllExperiment :: C.ExperimentFunction
 containsAllExperiment experimenter@(C.SimpleQueue ds t) _ = SQ.containsAll ds t `deepseq` experimenter

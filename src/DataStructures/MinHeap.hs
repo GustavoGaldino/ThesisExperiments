@@ -38,7 +38,9 @@ remove :: MyMinHeap Int -> MyMinHeap Int
 remove h = if M.null h then h else M.deleteMin h
         
 clear :: MyMinHeap Int -> MyMinHeap Int
-clear h = M.empty
+clear h 
+    | M.null h  = h
+    | otherwise = clear (remove h)
 
 contains :: MyMinHeap Int -> Int -> Bool
 contains h e = M.member e h
@@ -49,12 +51,15 @@ containsAll h t = all (`M.member` h) (toList t)
 iterator :: MyMinHeap Int -> MyMinHeap Int
 iterator = id
 
-removeAll :: MyMinHeap Int-> MyMinHeap Int -> MyMinHeap Int
-removeAll h t = h
+removeAll :: MyMinHeap Int -> MyMinHeap Int -> MyMinHeap Int
+removeAll h t
+    | M.null t = h
+    | otherwise = removeAll (M.delete (M.minElem t) h) (M.deleteMin t)
 
 retainAll :: MyMinHeap Int -> MyMinHeap Int -> MyMinHeap Int
-retainAll h t = t
+retainAll h t = foldl (\acc x -> if contains t x then M.insert x acc else acc) M.empty (toList h)
 
 toList :: MyMinHeap Int -> [Int]
-toList _ = []
-
+toList h
+    | M.null h  = []
+    | otherwise = M.minElem h : toList (M.deleteMin h)

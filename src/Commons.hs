@@ -30,10 +30,7 @@ instance (NFData v) => NFData (AL.FM k v) where
     rnf al = AL.strictWith rnf al `seq` ()
 
 instance (NFData a, Ord a) => NFData (MH.Min (S.Heap a) a) where
-    rnf mh = let seqList = MH.toSeq mh :: [a]
-             in rnf seqList `seq` ()
-
-
+    rnf mh = MH.strictWith rnf mh `seq` ()
 
 -- Intermediate results are set in the base data structure in SimpleSeq, so need to force it
 instance NFData Experimenter where
