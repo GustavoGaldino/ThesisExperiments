@@ -1,0 +1,1 @@
+cabal build --enable-profiling --enable-library-profiling --enable-executable-profiling
