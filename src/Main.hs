@@ -7,10 +7,13 @@ import qualified DataStructures.Main as M
 import qualified DataStructures.SimpleQueue as SQ
 import qualified DataStructures.StandardSet as SS
 import qualified DataStructures.AssocList as AL
+import qualified DataStructures.StandardMap as SM
+import qualified DataStructures.UnbalancedSet as US
 import qualified DataStructures.MinHeap as MH
+import qualified DataStructures.SplayHeap as SH
 
 -- Supported data structures
-data DataStructure = SimpleQueue | StandardSet | AssocList | MinHeap deriving Show
+data DataStructure = SimpleQueue | StandardSet | AssocList | MinHeap | StandardMap | UnbalancedSet | SplayHeap deriving Show
 
 -- Supported experiments (all of them)
 data Experiment = Add | AddAll | Clear | Contains | ContainsAll | Iterator | Remove | RemoveAll | RetainAll | ToList deriving Show
@@ -21,6 +24,9 @@ rawStringToDataStructure "SimpleQueue" = SimpleQueue
 rawStringToDataStructure "StandardSet" = StandardSet
 rawStringToDataStructure "AssocList" = AssocList
 rawStringToDataStructure "MinHeap" = MinHeap
+rawStringToDataStructure "StandardMap" = StandardMap
+rawStringToDataStructure "UnbalancedSet" = UnbalancedSet
+rawStringToDataStructure "SplayHeap" = SplayHeap 
 rawStringToDataStructure _ = error "Could not match any data structure"
 
 -- Parse experiment input string
@@ -56,6 +62,9 @@ dataStructureToExperimenterSetup SimpleQueue = SQ.envSetup
 dataStructureToExperimenterSetup StandardSet = SS.envSetupSet
 dataStructureToExperimenterSetup AssocList = AL.envSetup
 dataStructureToExperimenterSetup MinHeap = MH.envSetup
+dataStructureToExperimenterSetup StandardMap = SM.envSetup
+dataStructureToExperimenterSetup UnbalancedSet = US.envSetupSet
+dataStructureToExperimenterSetup SplayHeap = SH.envSetup
 
 -- Runs a given experiment function N times forcing evaluation through intermediate steps
 runNExperimentFunction :: Int -> Maybe Int -> C.Experimenter -> C.ExperimentFunction -> IO ()
@@ -69,60 +78,90 @@ addExperiment ds@(C.SimpleQueue _ _) opElems = M.addExperiment ds opElems
 addExperiment ds@(C.StandardSet _ _) opElems = M.addExperiment ds opElems
 addExperiment ds@(C.AssocList _ _) opElems = M.addExperiment ds opElems
 addExperiment ds@(C.MinHeap _ _) opElems = M.addExperiment ds opElems
+addExperiment ds@(C.StandardMap _ _) opElems = M.addExperiment ds opElems
+addExperiment ds@(C.UnbalancedSet _ _) opElems = M.addExperiment ds opElems
+addExperiment ds@(C.SplayHeap _ _) opElems = M.addExperiment ds opElems
 
 addAllExperiment :: C.ExperimentFunction
 addAllExperiment ds@(C.SimpleQueue _ _) opElems = M.addAllExperiment ds opElems
 addAllExperiment ds@(C.StandardSet _ _) opElems = M.addAllExperiment ds opElems
 addAllExperiment ds@(C.AssocList _ _) opElems = M.addAllExperiment ds opElems
 addAllExperiment ds@(C.MinHeap _ _) opElems = M.addAllExperiment ds opElems
+addAllExperiment ds@(C.StandardMap _ _) opElems = M.addAllExperiment ds opElems
+addAllExperiment ds@(C.UnbalancedSet _ _) opElems = M.addAllExperiment ds opElems
+addAllExperiment ds@(C.SplayHeap _ _) opElems = M.addAllExperiment ds opElems
 
 clearExperiment :: C.ExperimentFunction
 clearExperiment ds@(C.SimpleQueue _ _) opElems = M.clearExperiment ds opElems
 clearExperiment ds@(C.StandardSet _ _) opElems = M.clearExperiment ds opElems
 clearExperiment ds@(C.AssocList _ _) opElems = M.clearExperiment ds opElems
 clearExperiment ds@(C.MinHeap _ _) opElems = M.clearExperiment ds opElems
+clearExperiment ds@(C.StandardMap _ _) opElems = M.clearExperiment ds opElems
+clearExperiment ds@(C.UnbalancedSet _ _) opElems = M.clearExperiment ds opElems
+clearExperiment ds@(C.SplayHeap _ _) opElems = M.clearExperiment ds opElems
 
 containsExperiment :: C.ExperimentFunction
 containsExperiment ds@(C.SimpleQueue _ _) opElems = M.containsExperiment ds opElems
 containsExperiment ds@(C.StandardSet _ _) opElems = M.containsExperiment ds opElems
 containsExperiment ds@(C.AssocList _ _) opElems = M.containsExperiment ds opElems
 containsExperiment ds@(C.MinHeap _ _) opElems = M.containsExperiment ds opElems
+containsExperiment ds@(C.StandardMap _ _) opElems = M.containsExperiment ds opElems
+containsExperiment ds@(C.UnbalancedSet _ _) opElems = M.containsExperiment ds opElems
+containsExperiment ds@(C.SplayHeap _ _) opElems = M.containsExperiment ds opElems
 
 containsAllExperiment :: C.ExperimentFunction
 containsAllExperiment ds@(C.SimpleQueue _ _) opElems = M.containsAllExperiment ds opElems
 containsAllExperiment ds@(C.StandardSet _ _) opElems = M.containsAllExperiment ds opElems
 containsAllExperiment ds@(C.AssocList _ _) opElems = M.containsAllExperiment ds opElems
 containsAllExperiment ds@(C.MinHeap _ _) opElems = M.containsAllExperiment ds opElems
+containsAllExperiment ds@(C.StandardMap _ _) opElems = M.containsAllExperiment ds opElems
+containsAllExperiment ds@(C.UnbalancedSet _ _) opElems = M.containsAllExperiment ds opElems
+containsAllExperiment ds@(C.SplayHeap _ _) opElems = M.containsAllExperiment ds opElems
 
 iteratorExperiment :: C.ExperimentFunction
 iteratorExperiment ds@(C.SimpleQueue _ _) opElems = M.iteratorExperiment ds opElems
 iteratorExperiment ds@(C.StandardSet _ _) opElems = M.iteratorExperiment ds opElems
 iteratorExperiment ds@(C.AssocList _ _) opElems = M.iteratorExperiment ds opElems
 iteratorExperiment ds@(C.MinHeap _ _) opElems = M.iteratorExperiment ds opElems
+iteratorExperiment ds@(C.StandardMap _ _) opElems = M.iteratorExperiment ds opElems
+iteratorExperiment ds@(C.UnbalancedSet _ _) opElems = M.iteratorExperiment ds opElems
+iteratorExperiment ds@(C.SplayHeap _ _) opElems = M.iteratorExperiment ds opElems
 
 removeExperiment :: C.ExperimentFunction
 removeExperiment ds@(C.SimpleQueue _ _) opElems = M.removeExperiment ds opElems
 removeExperiment ds@(C.StandardSet _ _) opElems = M.removeExperiment ds opElems
 removeExperiment ds@(C.AssocList _ _) opElems = M.removeExperiment ds opElems
 removeExperiment ds@(C.MinHeap _ _) opElems = M.removeExperiment ds opElems
+removeExperiment ds@(C.StandardMap _ _) opElems = M.removeExperiment ds opElems
+removeExperiment ds@(C.UnbalancedSet _ _) opElems = M.removeExperiment ds opElems
+removeExperiment ds@(C.SplayHeap _ _) opElems = M.removeExperiment ds opElems
 
 removeAllExperiment :: C.ExperimentFunction
 removeAllExperiment ds@(C.SimpleQueue _ _) opElems = M.removeAllExperiment ds opElems
 removeAllExperiment ds@(C.StandardSet _ _) opElems = M.removeAllExperiment ds opElems
 removeAllExperiment ds@(C.AssocList _ _) opElems = M.removeAllExperiment ds opElems
 removeAllExperiment ds@(C.MinHeap _ _) opElems = M.removeAllExperiment ds opElems
+removeAllExperiment ds@(C.StandardMap _ _) opElems = M.removeAllExperiment ds opElems
+removeAllExperiment ds@(C.UnbalancedSet _ _) opElems = M.removeAllExperiment ds opElems
+removeAllExperiment ds@(C.SplayHeap _ _) opElems = M.removeAllExperiment ds opElems
 
 retainAllExperiment :: C.ExperimentFunction
 retainAllExperiment ds@(C.SimpleQueue _ _) opElems = M.retainAllExperiment ds opElems
 retainAllExperiment ds@(C.StandardSet _ _) opElems = M.retainAllExperiment ds opElems
 retainAllExperiment ds@(C.AssocList _ _) opElems = M.retainAllExperiment ds opElems
 retainAllExperiment ds@(C.MinHeap _ _) opElems = M.retainAllExperiment ds opElems
+retainAllExperiment ds@(C.StandardMap _ _) opElems = M.retainAllExperiment ds opElems
+retainAllExperiment ds@(C.UnbalancedSet _ _) opElems = M.retainAllExperiment ds opElems
+retainAllExperiment ds@(C.SplayHeap _ _) opElems = M.retainAllExperiment ds opElems
 
 toListExperiment :: C.ExperimentFunction
 toListExperiment ds@(C.SimpleQueue _ _) opElems = M.toListExperiment ds opElems
 toListExperiment ds@(C.StandardSet _ _) opElems = M.toListExperiment ds opElems
 toListExperiment ds@(C.AssocList _ _) opElems = M.toListExperiment ds opElems
 toListExperiment ds@(C.MinHeap _ _) opElems = M.toListExperiment ds opElems
+toListExperiment ds@(C.StandardMap _ _) opElems = M.toListExperiment ds opElems
+toListExperiment ds@(C.UnbalancedSet _ _) opElems = M.toListExperiment ds opElems
+toListExperiment ds@(C.SplayHeap _ _) opElems = M.toListExperiment ds opElems
 
 -- Read execution arguments, parse it and run experiment
 main :: IO ()
