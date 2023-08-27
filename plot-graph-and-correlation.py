@@ -23,7 +23,7 @@ def line_fit_plot(x, y, title, xlabel, ylabel):
 
 def main():
     # Substitua 'caminho/do/arquivo.csv' pelo caminho do seu arquivo CSV
-    arquivo_csv = 'csv/SimpleQueue.csv'
+    arquivo_csv = 'csv/UnbalancedSet.csv'
 
     variables_info = [
         ['alloc', 'energy_dram', 'Total Allocation (MB)', 'Energy DRAM (J)'],

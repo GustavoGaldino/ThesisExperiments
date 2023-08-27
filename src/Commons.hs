@@ -13,6 +13,9 @@ import qualified Data.Edison.Assoc.StandardMap as SM
 import qualified Data.Edison.Coll.MinHeap as MH
 import qualified Data.Edison.Coll.UnbalancedSet as US
 import qualified Data.Edison.Coll.SplayHeap as S
+import qualified Data.Edison.Coll.LazyPairingHeap as LPH
+import qualified Data.Edison.Coll.SkewHeap as SKH
+import qualified Data.Edison.Coll.LeftistHeap as LH
 
 type MyMinHeap a = MH.Min (S.Heap a) a
 
@@ -26,6 +29,9 @@ data Experimenter
     | StandardMap (SM.FM Int Int) (SM.FM Int Int)
     | UnbalancedSet (US.Set Int) (US.Set Int)
     | SplayHeap (S.Heap Int) (S.Heap Int)
+    | LazyPairingHeap (LPH.Heap Int) (LPH.Heap Int)
+    | SkewHeap (SKH.Heap Int) (SKH.Heap Int)
+    | LeftistHeap (LH.Heap Int) (LH.Heap Int)
 
 -- We need to force SimpleQueue evaluation to execute experiments N times
 instance (NFData a) => NFData (SQ.Seq a) where
@@ -43,6 +49,15 @@ instance (NFData a) => NFData (US.Set a) where
 instance (NFData sh) => NFData (S.Heap sh) where
     rnf us = S.strictWith rnf us `seq` ()
 
+instance (NFData sh) => NFData (LPH.Heap sh) where
+    rnf us = LPH.strictWith rnf us `seq` ()
+
+instance (NFData sh) => NFData (SKH.Heap sh) where
+    rnf us = SKH.strictWith rnf us `seq` ()
+
+instance (NFData sh) => NFData (LH.Heap sh) where
+    rnf us = LH.strictWith rnf us `seq` ()
+
 -- Intermediate results are set in the base data structure in SimpleSeq, so need to force it
 instance NFData Experimenter where
     rnf (SimpleQueue ds t) = rnf ds `seq` rnf t `seq` ()
@@ -52,3 +67,6 @@ instance NFData Experimenter where
     rnf (StandardMap ds t) = rnf ds `seq` rnf t `seq` ()
     rnf (UnbalancedSet ds t) = rnf ds `seq` rnf t `seq` ()
     rnf (SplayHeap ds t) = rnf ds `seq` rnf t `seq` ()
+    rnf (LazyPairingHeap ds t) = rnf ds `seq`rnf t `seq` ()
+    rnf (SkewHeap ds t) = rnf ds `seq`rnf t `seq` ()
+    rnf (LeftistHeap ds t) = rnf ds `seq`rnf t `seq` ()

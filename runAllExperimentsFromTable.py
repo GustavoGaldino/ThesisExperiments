@@ -24,6 +24,9 @@ class DataStructure(Enum):
     StandardMap = 'StandardMap'
     UnbalancedSet = 'UnbalancedSet'
     SplayHeap = 'SplayHeap'
+    LazyPairingHeap = 'LazyPairingHeap'
+    SkewHeap = 'SkewHeap'
+    LeftistHeap = 'LeftistHeap'
 
 # Create csv folder (if none exists) and dump the experiment results into it
 def write_csv_data(data_structure: DataStructure, csv_data: list[tuple[float, float, float, float]]):
@@ -95,12 +98,12 @@ def parse_args(args):
 
 def main():
 
-    data_strucutres = [DataStructure.SplayHeap, DataStructure.StandardMap, DataStructure.UnbalancedSet]
+    data_strucutres = [DataStructure.SkewHeap]
     for data_structure in data_strucutres:
         csv_data: list[tuple[float, float, float, float]] = []
 
         for e in Experiment:
-            default_parameters = get_parameters_default_for_experiment(e, 1000)
+            default_parameters = get_parameters_default_for_experiment(e, 1)
             if default_parameters != None:
                 (iters, base_elems, op_elems) = default_parameters
                 csv_data.append(run_experiment(data_structure, e, iters, base_elems, op_elems))

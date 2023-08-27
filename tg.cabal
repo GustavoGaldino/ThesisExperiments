@@ -17,7 +17,7 @@ cabal-version:       >=1.10
 
 executable tg
   main-is:             Main.hs
-  other-modules: Commons, DataStructures.SimpleQueue, DataStructures.StandardSet, DataStructures.AssocList, DataStructures.MinHeap, DataStructures.StandardMap, DataStructures.UnbalancedSet, DataStructures.SplayHeap
+  other-modules: Commons, DataStructures.SimpleQueue, DataStructures.StandardSet, DataStructures.AssocList, DataStructures.MinHeap, DataStructures.StandardMap, DataStructures.UnbalancedSet, DataStructures.SplayHeap, DataStructures.LazyPairingHeap, DataStructures.SkewHeap, DataStructures.LeftistHeap 
   -- other-extensions:    
   build-depends:       base >=4.8 && <4.9
                       , EdisonAPI  ==1.3
